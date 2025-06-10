@@ -1,0 +1,139 @@
+<html><head>
+    <title>Human Merge Sort</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        .container {
+            width: 80%;
+            margin: 20px auto;
+        }
+
+        .result {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Human Merge Sort</h1>
+        <p>This app sorts a list of items based on your preferences.</p>
+
+        <div id="loading" class="loading">
+            Loading initial list...
+        </div>
+
+        <div id="list-container" style="display: none;">
+            <!-- List items will be dynamically added here -->
+        </div>
+
+        <div id="result-container" class="result" style="display: none;">
+            <!-- Sorted list will be displayed here -->
+        </div>
+
+    </div>
+
+
+    <script>
+        const myList = ['Janson de Sailly - Internat', 'Janson de Sailly - Sans internat', 'Fénelon - Internat', 'Fénelon - Sans internat', 'Clémenceau - Internat', 'Clémenceau - Sans internat', 'Chateaubriand - Internat', 'Chateaubriand - Sans internat', 'Begson'];
+
+        const listContainer = document.getElementById('list-container');
+        const resultContainer = document.getElementById('result-container');
+        const loadingDiv = document.getElementById('loading');
+
+        // Function to display the list items
+        function displayList(list) {
+            listContainer.style.display = 'block'; // Show the list container
+
+            for (let i = 0; i < list.length; i++) {
+                const listItem = document.createElement('p');
+                listItem.textContent = list[i];
+                listContainer.appendChild(listItem);
+            }
+
+            loadingDiv.style.display = 'none'; // Hide the loading message
+        }
+
+
+        // Human Merge Sort implementation (JavaScript)
+        function humanMergeSort(lst, compareFunc) {
+            if (lst.length <= 1) {
+                return lst;
+            }
+            const mid = Math.floor(lst.length / 2);
+            const left = humanMergeSort(lst.slice(0, mid), compareFunc);
+            const right = humanMergeSort(lst.slice(mid), compareFunc);
+            return merge(left, right, compareFunc);
+        }
+
+        function merge(left, right, compareFunc) {
+            const result = [];
+            let i = 0;
+            let j = 0;
+
+            while (i < left.length && j < right.length) {
+                const preferred = compareFunc(left[i], right[j]);
+
+                if (preferred === left[i]) {
+                    result.push(left[i]);
+                    i++;
+                } else {
+                    result.push(right[j]);
+                    j++;
+                }
+            }
+
+            result.push(...left.slice(i));
+            result.push(...right.slice(j));
+
+            return result;
+        }
+
+
+        // User comparison function (JavaScript)
+        async function userCompare(a, b) {
+            return new Promise((resolve) => {
+                const choice = prompt(`Which do you prefer?\n1: ${a}\n2: ${b}`);
+
+                if (choice === '1') {
+                    resolve(a);
+                } else if (choice === '2') {
+                    resolve(b);
+                } else {
+                    alert("Invalid input. Please enter 1 or 2.");
+                    userCompare(a, b); // Recursive call to ask again
+                }
+            });
+
+        }
+
+
+        async function sortAndDisplay() {
+            const sortedList = await humanMergeSort(myList, userCompare);
+
+            resultContainer.style.display = 'block'; // Show the result container
+            resultContainer.textContent = `Sorted by your preferences: ${sortedList.join(', ')}`;
+        }
+
+
+        // Initial setup and start sorting
+        displayList(myList); // Display the initial list
+
+        // Add a button to trigger sorting
+        const sortButton = document.createElement('button');
+        sortButton.textContent = 'Sort List';
+        sortButton.addEventListener('click', sortAndDisplay);
+        document.body.appendChild(sortButton);
+
+    </script>
+
+
+</body></html>
