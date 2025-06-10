@@ -1,100 +1,147 @@
-// script.js
 document.addEventListener('DOMContentLoaded', () => {
-    const inputForm = document.getElementById('inputForm');
-    const elementInput = document.getElementById('elementInput');
-    const elementList = document.getElementById('elementList');
-    const startSort = document.getElementById('startSort');
-    const compareModal = document.getElementById('compareModal');
-    const compareText = document.getElementById('compareText');
-    const sortedList = document.getElementById('sortedList');
+  const input = document.getElementById('item-input');
+  const addBtn = document.getElementById('add-btn');
+  const rawListEl = document.getElementById('raw-list');
+  const startSortBtn = document.getElementById('start-sort');
+  const resultSection = document.getElementById('result-section');
+  const sortedListEl = document.getElementById('sorted-list');
+  const toggleBtn = document.getElementById('toggle-order');
 
-    let elements = [];
-    let comparisons = [];
+  // Modal elements
+  const compareModal = new bootstrap.Modal(document.getElementById('compareModal'));
+  const choiceA = document.getElementById('choiceA');
+  const choiceB = document.getElementById('choiceB');
 
-    inputForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const value = elementInput.value.trim();
-        if (value !== '') {
-            elements.push(value);
-            const li = document.createElement('li');
-            li.textContent = value;
-            elementList.appendChild(li);
-            elementInput.value = '';
-        }
+  let items = [];
+  let sorted = [];
+  let compareQueue = [];
+  let asc = true;
+
+  // Render raw list
+  function renderRaw() {
+    rawListEl.innerHTML = '';
+    items.forEach((it, i) => {
+      const li = document.createElement('li');
+      li.textContent = it;
+      li.className = 'list-group-item';
+      rawListEl.appendChild(li);
+    });
+    startSortBtn.disabled = items.length < 2;
+  }
+
+  // Render final sorted list
+  function renderSorted() {
+    sortedListEl.innerHTML = '';
+    const display = asc ? sorted : [...sorted].reverse();
+    display.forEach((it, i) => {
+      const li = document.createElement('li');
+      li.textContent = it;
+      li.className = 'list-group-item';
+      sortedListEl.appendChild(li);
+    });
+    toggleBtn.textContent = asc ? 'Switch to Descending' : 'Switch to Ascending';
+  }
+
+  // Build comparison queue for insertion sort
+  function buildQueue() {
+    sorted = [];
+    compareQueue = [];
+
+    // insert first element automatically
+    sorted.push(items[0]);
+
+    // for each new item, we schedule comparisons to find its spot
+    for (let i = 1; i < items.length; i++) {
+      // binary-search–style queue of comparisons
+      let low = 0, high = sorted.length;
+      while (low < high) {
+        let mid = Math.floor((low + high) / 2);
+        compareQueue.push({ a: items[i], b: sorted[mid], insertAt: mid });
+        // we’ll handle branching based on user picks
+        // and update low/high in real time
+      }
+      // we mark end insertion when queue empty for this item
+      compareQueue.push({ a: items[i], b: null, insertAt: null });
+    }
+  }
+
+  // Start sort flow
+  startSortBtn.addEventListener('click', () => {
+    resultSection.classList.add('d-none');
+    buildQueue();
+    nextComparison();
+  });
+
+  // Handle modal choices
+  function nextComparison() {
+    // clear highlights
+    document.querySelectorAll('.compared').forEach(el => el.classList.remove('compared'));
+
+    if (!compareQueue.length) {
+      // done!
+      renderSorted();
+      resultSection.classList.remove('d-none');
+      return;
+    }
+
+    const { a, b, insertAt } = compareQueue.shift();
+
+    if (b === null) {
+      // insert at last decided position
+      sorted.splice(insertAt, 0, a);
+      return nextComparison();
+    }
+
+    // show modal
+    choiceA.textContent = a;
+    choiceB.textContent = b;
+    // highlight in raw list (optional)
+    [...rawListEl.children].forEach(li => {
+      if (li.textContent === a || li.textContent === b) {
+        li.classList.add('compared');
+      }
     });
 
-    startSort.addEventListener('click', () => {
-        if (elements.length > 1) {
-            elements = mergeSort(elements.slice());
-            displaySortedElements();
-        }
-    });
+    compareModal.show();
 
-    function mergeSort(arr) {
-        if (arr.length <= 1) return arr;
-
-        const mid = Math.floor(arr.length / 2);
-        const left = arr.slice(0, mid);
-        const right = arr.slice(mid);
-
-        return merge(mergeSort(left), mergeSort(right));
+    // once user picks, we decide branch
+    function handle(choice) {
+      compareModal.hide();
+      // if user chose A < B => a comes before b => narrow high
+      // else a > b => narrow low
+      if (choice === 'A') {
+        // drop all comparisons of this insertion beyond this mid
+        // by flushing remaining mids greater or equal to this insertAt
+        compareQueue = compareQueue.filter(c => c.insertAt < insertAt);
+      } else {
+        // drop all less than or equal
+        compareQueue = compareQueue.filter(c => c.insertAt > insertAt);
+      }
+      // continue
+      nextComparison();
     }
 
-    function merge(left, right) {
-        let result = [];
-        let i = 0;
-        let j = 0;
+    choiceA.onclick = () => handle('A');
+    choiceB.onclick = () => handle('B');
+  }
 
-        while (i < left.length && j < right.length) {
-            if (!comparisons.some(cmp => cmp.left === left[i] && cmp.right === right[j])) {
-                showComparisonModal(left[i], right[j]);
-                return;
-            } else if (comparisons.some(cmp => cmp.left === left[i] && cmp.right === right[j] && cmp.preferred === left[i])) {
-                result.push(left[i]);
-                i++;
-            } else if (comparisons.some(cmp => cmp.left === left[i] && cmp.right === right[j] && cmp.preferred === right[j])) {
-                result.push(right[j]);
-                j++;
-            }
-        }
-
-        return result.concat(left.slice(i)).concat(right.slice(j));
+  // Event bindings
+  addBtn.onclick = () => {
+    const v = input.value.trim();
+    if (v) {
+      items.push(v);
+      input.value = '';
+      renderRaw();
     }
+  };
+  input.addEventListener('keypress', e => {
+    if (e.key === 'Enter') addBtn.click();
+  });
+  toggleBtn.onclick = () => {
+    asc = !asc;
+    renderSorted();
+  };
 
-    function showComparisonModal(first, second) {
-        compareText.textContent = `Choose between ${first} and ${second}`;
-        compareModal.style.display = 'block';
-    }
-
-    function chooseFirst() {
-        const first = elements.shift();
-        const second = elements[0];
-        comparisons.push({ left: first, right: second, preferred: first });
-        continueSorting();
-    }
-
-    function chooseSecond() {
-        const first = elements.shift();
-        const second = elements[0];
-        comparisons.push({ left: first, right: second, preferred: second });
-        continueSorting();
-    }
-
-    function continueSorting() {
-        compareModal.style.display = 'none';
-        if (elements.length > 1) {
-            mergeSort(elements.slice());
-        } else {
-            displaySortedElements();
-        }
-    }
-
-    function displaySortedElements() {
-        sortedList.innerHTML = '';
-        elements.forEach((element) => {
-            const li = document.createElement('li');
-            li.textContent = element;
-            sortedList.appendChild(li);
-        });
-    }
+  // initial render
+  renderRaw();
 });
