@@ -1,46 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Responsive Sorter</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pairwise Sorter</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.5.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="container">
-        <h1>New Responsive Sorter</h1>
-        <form id="inputForm">
-            <input type="text" id="elementInput" placeholder="Enter an element">
-            <button type="submit">Add</button>
-        </form>
-        <ul id="elementList"></ul>
-        <button id="startSort">Start Sorting</button>
+<body class="bg-light">
 
-        <!-- Modal for comparison -->
-        <div class="modal" id="compareModal">
-            <div class="modal-content">
-                <h2>Compare Elements</h2>
-                <p id="compareText"></p>
-                <button onclick="chooseFirst()">First</button>
-                <button onclick="chooseSecond()">Second</button>
-            </div>
-        </div>
+  <div class="container py-5">
+    <h1 class="mb-4 text-center">Pairwise Comparison Sort</h1>
 
-        <!-- Modal for comparison -->
-        <div class="modal" id="compareModal">
-            <div class="modal-content">
-                <h2>Compare Elements</h2>
-                <p id="compareText"></p>
-                <button onclick="chooseFirst()">First</button>
-                <button onclick="chooseSecond()">Second</button>
-            </div>
-        </div>
-
-        <!-- Sorted list display -->
-        <h2>Sorted List</h2>
-        <ul id="sortedList"></ul>
+    <!-- 1. Input Section -->
+    <div class="input-group mb-3">
+      <input id="item-input" type="text" class="form-control" placeholder="Enter an item">
+      <button id="add-btn" class="btn btn-primary">Add</button>
     </div>
+    <small class="text-muted">Press Enter or click “Add” to append.</small>
 
-    <script src="script.js"></script>
+    <!-- Live List Preview -->
+    <ul id="raw-list" class="list-group my-4"></ul>
+
+    <!-- Sort Trigger -->
+    <button id="start-sort" class="btn btn-success" disabled>Start Sorting</button>
+
+    <!-- 3. Sorted List & Toggle -->
+    <div id="result-section" class="mt-5 d-none">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5">Sorted List</h2>
+        <button id="toggle-order" class="btn btn-outline-secondary btn-sm">Switch to Descending</button>
+      </div>
+      <ul id="sorted-list" class="list-group"></ul>
+    </div>
+  </div>
+
+  <!-- 2. Comparison Modal -->
+  <div class="modal fade" id="compareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Which comes first?</h5>
+        </div>
+        <div class="modal-body text-center">
+          <button id="choiceA" class="btn btn-outline-primary mx-2 py-3 w-100"></button>
+          <span class="mx-2">vs.</span>
+          <button id="choiceB" class="btn btn-outline-primary mx-2 py-3 w-100"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap & Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.5.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- App Logic -->
+  <script src="script.js"></script>
 </body>
 </html>
