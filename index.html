@@ -1,44 +1,37 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Pairwise Comparison Sort - Fixed</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.5.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-    }
-    #raw-list li, #sorted-list li {
-      transition: background-color 0.3s ease;
-    }
-    #raw-list li.compared, #sorted-list li.compared {
-      background-color: rgba(0, 123, 255, 0.1);
-    }
-    .modal-body button {
-      font-size: 1.1rem;
-      white-space: normal;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pairwise Comparison Sort</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.5.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+  }
+  #raw-list li.compared {
+    background-color: #cce5ff;
+  }
+</style>
 </head>
 <body class="bg-light">
   <div class="container py-5">
     <h1 class="mb-4 text-center">Pairwise Comparison Sort</h1>
 
-    <!-- Input with form to catch enter -->
-    <form id="input-form" class="input-group mb-3" onsubmit="return false;">
-      <input id="item-input" type="text" class="form-control" placeholder="Enter an item" autocomplete="off" />
-      <button id="add-btn" class="btn btn-primary" type="button">Add</button>
+    <!-- Input form -->
+    <form id="input-form" class="input-group mb-3">
+      <input id="item-input" type="text" class="form-control" placeholder="Enter an item" autocomplete="off" required />
+      <button id="add-btn" class="btn btn-primary" type="submit">Add</button>
     </form>
     <small class="text-muted">Press Enter or click “Add” to append.</small>
 
-    <!-- Live List Preview -->
+    <!-- Raw List -->
     <ul id="raw-list" class="list-group my-4"></ul>
 
-    <!-- Sort Trigger -->
+    <!-- Start Sorting -->
     <button id="start-sort" class="btn btn-success" disabled>Start Sorting</button>
 
-    <!-- Sorted List & Toggle -->
+    <!-- Result Section -->
     <div id="result-section" class="mt-5 d-none">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <h2 class="h5">Sorted List</h2>
@@ -48,187 +41,181 @@
     </div>
   </div>
 
-  <!-- Comparison Modal -->
+  <!-- Modal -->
   <div class="modal fade" id="compareModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Which comes first?</h5>
-        </div>
-        <div class="modal-body text-center">
-          <button id="choiceA" class="btn btn-outline-primary mx-2 py-3 w-100"></button>
-          <span class="mx-2 align-middle" style="font-size:1.25rem;">vs.</span>
-          <button id="choiceB" class="btn btn-outline-primary mx-2 py-3 w-100"></button>
-        </div>
+      <div class="modal-content text-center p-4">
+        <h5 class="modal-title mb-3">Which comes first?</h5>
+        <button id="choiceA" class="btn btn-outline-primary w-100 mb-2"></button>
+        <div style="font-size:1.5rem; margin: 8px 0;">vs.</div>
+        <button id="choiceB" class="btn btn-outline-primary w-100"></button>
       </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.5.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    (() => {
-      const input = document.getElementById('item-input');
-      const addBtn = document.getElementById('add-btn');
-      const rawListEl = document.getElementById('raw-list');
-      const startSortBtn = document.getElementById('start-sort');
-      const resultSection = document.getElementById('result-section');
-      const sortedListEl = document.getElementById('sorted-list');
-      const toggleBtn = document.getElementById('toggle-order');
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.5.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(() => {
+  const inputForm = document.getElementById('input-form');
+  const input = document.getElementById('item-input');
+  const addBtn = document.getElementById('add-btn');
+  const rawListEl = document.getElementById('raw-list');
+  const startSortBtn = document.getElementById('start-sort');
+  const resultSection = document.getElementById('result-section');
+  const sortedListEl = document.getElementById('sorted-list');
+  const toggleBtn = document.getElementById('toggle-order');
 
-      // Modal elements
-      const compareModalEl = document.getElementById('compareModal');
-      const compareModal = new bootstrap.Modal(compareModalEl);
-      const choiceA = document.getElementById('choiceA');
-      const choiceB = document.getElementById('choiceB');
+  // Modal elements
+  const compareModalEl = document.getElementById('compareModal');
+  const compareModal = new bootstrap.Modal(compareModalEl);
+  const choiceA = document.getElementById('choiceA');
+  const choiceB = document.getElementById('choiceB');
 
-      let items = [];
-      let sorted = [];
-      let asc = true;
+  let items = [];
+  let sorted = [];
+  let asc = true;
 
-      // State for sorting
-      let currentInsertIndex = 1; // index in items to insert next
-      let insertionPosition = 0; // current comparison index in sorted array during insertion
-      let insertingItem = null;
+  // Sorting state:
+  // We'll do insertion sort using pairwise comparison:
+  let currentInsertIndex = 1;  // Which item from items we want to insert next into sorted
+  let currentCompareIndex = 0; // Position in sorted to compare insertion candidate with
+  let insertingItem = null;
 
-      // Render raw list
-      function renderRaw() {
-        rawListEl.innerHTML = '';
-        items.forEach((it) => {
-          const li = document.createElement('li');
-          li.textContent = it;
-          li.className = 'list-group-item';
-          rawListEl.appendChild(li);
-        });
-        startSortBtn.disabled = items.length < 2;
-      }
+  // Render raw list
+  function renderRaw() {
+    rawListEl.innerHTML = '';
+    items.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      li.className = 'list-group-item';
+      rawListEl.appendChild(li);
+    });
+    startSortBtn.disabled = items.length < 2;
+  }
 
-      // Render final sorted list
-      function renderSorted() {
-        sortedListEl.innerHTML = '';
-        const display = asc ? sorted : [...sorted].reverse();
-        display.forEach((it) => {
-          const li = document.createElement('li');
-          li.textContent = it;
-          li.className = 'list-group-item';
-          sortedListEl.appendChild(li);
-        });
-        toggleBtn.textContent = asc ? 'Switch to Descending' : 'Switch to Ascending';
-      }
+  // Render sorted list
+  function renderSorted() {
+    sortedListEl.innerHTML = '';
+    const display = asc ? sorted : [...sorted].reverse();
+    display.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      li.className = 'list-group-item';
+      sortedListEl.appendChild(li);
+    });
+    toggleBtn.textContent = asc ? 'Switch to Descending' : 'Switch to Ascending';
+  }
 
-      // Start sorting: initialize sorted array with first item
-      function startSorting() {
-        sorted = [items[0]];
-        currentInsertIndex = 1;
-        insertionPosition = 0;
+  // Start sorting
+  function startSorting() {
+    sorted = [items[0]];
+    currentInsertIndex = 1;
+    currentCompareIndex = 0;
+    insertingItem = items[currentInsertIndex];
+    resultSection.classList.add('d-none');
+    startSortBtn.disabled = true;
+    addBtn.disabled = true;
+    input.disabled = true;
+    nextComparison();
+  }
+
+  // Show next comparison
+  function nextComparison() {
+    // Finished inserting all items
+    if (currentInsertIndex >= items.length) {
+      finishSorting();
+      return;
+    }
+
+    // If compare index >= sorted length, insert at end
+    if (currentCompareIndex >= sorted.length) {
+      sorted.push(insertingItem);
+      currentInsertIndex++;
+      if (currentInsertIndex < items.length) {
         insertingItem = items[currentInsertIndex];
-        resultSection.classList.add('d-none');
-        startSortBtn.disabled = true;
-        addBtn.disabled = true;
-        input.disabled = true;
-        rawListEl.querySelectorAll('li').forEach(li => li.classList.remove('compared'));
+        currentCompareIndex = 0;
         nextComparison();
+      } else {
+        finishSorting();
       }
+      return;
+    }
 
-      // Show comparison modal for current insertingItem vs sorted[insertionPosition]
-      function nextComparison() {
-        if (currentInsertIndex >= items.length) {
-          // sorting done
-          addBtn.disabled = false;
-          input.disabled = false;
-          startSortBtn.disabled = false;
-          renderSorted();
-          resultSection.classList.remove('d-none');
-          compareModal.hide();
-          return;
-        }
+    // Show modal to compare insertingItem vs sorted[currentCompareIndex]
+    choiceA.textContent = insertingItem;
+    choiceB.textContent = sorted[currentCompareIndex];
 
-        if (insertionPosition >= sorted.length) {
-          // Insert at end
-          sorted.push(insertingItem);
-          currentInsertIndex++;
-          if (currentInsertIndex < items.length) {
-            insertingItem = items[currentInsertIndex];
-            insertionPosition = 0;
-            nextComparison();
-          } else {
-            nextComparison();
-          }
-          return;
-        }
-
-        // Show modal for comparing insertingItem and sorted[insertionPosition]
-        choiceA.textContent = insertingItem;
-        choiceB.textContent = sorted[insertionPosition];
-
-        // Highlight compared items in raw list
-        rawListEl.querySelectorAll('li').forEach(li => {
-          li.classList.remove('compared');
-          if (li.textContent === insertingItem || li.textContent === sorted[insertionPosition]) {
-            li.classList.add('compared');
-          }
-        });
-
-        compareModal.show();
+    // Highlight items in raw list
+    Array.from(rawListEl.children).forEach(li => {
+      li.classList.remove('compared');
+      if (li.textContent === insertingItem || li.textContent === sorted[currentCompareIndex]) {
+        li.classList.add('compared');
       }
+    });
 
-      // Handle user's choice: true if A (insertingItem) should come before B, else false
-      function handleChoice(isAfirst) {
-        if (isAfirst) {
-          // Insert insertingItem here, before sorted[insertionPosition]
-          sorted.splice(insertionPosition, 0, insertingItem);
-          currentInsertIndex++;
-          if (currentInsertIndex < items.length) {
-            insertingItem = items[currentInsertIndex];
-            insertionPosition = 0;
-            nextComparison();
-          } else {
-            nextComparison();
-          }
-        } else {
-          // Move to next position in sorted to compare
-          insertionPosition++;
-          nextComparison();
-        }
+    compareModal.show();
+  }
+
+  // When user chooses which comes first
+  function handleChoice(isAfirst) {
+    compareModal.hide();
+
+    if (isAfirst) {
+      // Insert insertingItem before sorted[currentCompareIndex]
+      sorted.splice(currentCompareIndex, 0, insertingItem);
+      currentInsertIndex++;
+      if (currentInsertIndex < items.length) {
+        insertingItem = items[currentInsertIndex];
+        currentCompareIndex = 0;
+        nextComparison();
+      } else {
+        finishSorting();
       }
+    } else {
+      // Move to next item in sorted to compare
+      currentCompareIndex++;
+      nextComparison();
+    }
+  }
 
-      // Event bindings
-      addBtn.onclick = () => {
-        const v = input.value.trim();
-        if (v) {
-          items.push(v);
-          input.value = '';
-          renderRaw();
-        }
-      };
+  // Finish sorting
+  function finishSorting() {
+    addBtn.disabled = false;
+    input.disabled = false;
+    startSortBtn.disabled = false;
+    renderSorted();
+    resultSection.classList.remove('d-none');
 
-      // Allow Enter key to add item
-      document.getElementById('input-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        addBtn.click();
-      });
+    // Remove highlight
+    Array.from(rawListEl.children).forEach(li => li.classList.remove('compared'));
+  }
 
-      startSortBtn.onclick = () => {
-        if (items.length < 2) return;
-        startSorting();
-      };
+  // Event listeners
+  inputForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const val = input.value.trim();
+    if (val === '') return;
+    items.push(val);
+    input.value = '';
+    renderRaw();
+  });
 
-      toggleBtn.onclick = () => {
-        asc = !asc;
-        renderSorted();
-      };
+  startSortBtn.addEventListener('click', () => {
+    if (items.length < 2) return;
+    startSorting();
+  });
 
-      choiceA.onclick = () => {
-        handleChoice(true);
-        compareModal.hide();
-      };
-      choiceB.onclick = () => {
-        handleChoice(false);
-        compareModal.hide();
-      };
+  toggleBtn.addEventListener('click', () => {
+    asc = !asc;
+    renderSorted();
+  });
 
-      // Initial render
-      renderRaw();
-    })();
-  </script>
+  choiceA.addEventListener('click', () => handleChoice(true));
+  choiceB.addEventListener('click', () => handleChoice(false));
+
+  // Initial render
+  renderRaw();
+})();
+</script>
 </body>
 </html>
