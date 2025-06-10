@@ -3,94 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human Merge Sort</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .comparison {
-            margin-bottom: 20px;
-        }
-        .result {
-            font-weight: bold;
-        }
-    </style>
+    <title>Responsive Sorter</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="container">
+        <h1>Responsive Sorter</h1>
+        <form id="inputForm">
+            <input type="text" id="elementInput" placeholder="Enter an element">
+            <button type="submit">Add</button>
+        </form>
+        <ul id="elementList"></ul>
+        <button id="startSort">Start Sorting</button>
 
-<h1>Human Merge Sort Web App</h1>
-<div id="comparisons"></div>
-<p class="result" id="sortedResult"></p>
+        <!-- Modal for comparison -->
+        <div class="modal" id="compareModal">
+            <div class="modal-content">
+                <h2>Compare Elements</h2>
+                <p id="compareText"></p>
+                <button onclick="chooseFirst()">First</button>
+                <button onclick="chooseSecond()">Second</button>
+            </div>
+        </div>
 
-<script>
-    const my_list = ['Janson de Sailly - Internat', 'Janson de Sailly - Sans internat', 'Fénelon - Internat', 'Fénelon - Sans internat', 'Clémenceau - Internat', 'Clémenceau - Sans internat', 'Chateaubriand - Internat', 'Chateaubriand - Sans internat', 'Begson'];
+        <!-- Sorted list display -->
+        <h2>Sorted List</h2>
+        <ul id="sortedList"></ul>
+    </div>
 
-    function humanMergeSort(lst, compareFunc) {
-        if (lst.length <= 1) {
-            return lst;
-        }
-        const mid = Math.floor(lst.length / 2);
-        const left = humanMergeSort(lst.slice(0, mid), compareFunc);
-        const right = humanMergeSort(lst.slice(mid), compareFunc);
-        return merge(left, right, compareFunc);
-    }
-
-    function merge(left, right, compareFunc) {
-        const result = [];
-        let i = 0;
-        let j = 0;
-        while (i < left.length && j < right.length) {
-            const preferred = compareFunc(left[i], right[j]);
-            if (left[i] === preferred) {
-                result.push(left[i]);
-                i += 1;
-            } else {
-                result.push(right[j]);
-                j += 1;
-            }
-        }
-        result.push(...left.slice(i));
-        result.push(...right.slice(j));
-        return result;
-    }
-
-    async function userCompare(a, b) {
-        const comparison = document.createElement('div');
-        comparison.className = 'comparison';
-        comparison.innerHTML = `
-            <p>Which do you prefer?</p>
-            <p>1: ${a}</p>
-            <p>2: ${b}</p>
-        `;
-        document.getElementById('comparisons').appendChild(comparison);
-
-        const choice = await new Promise((resolve) => {
-            const buttons = [];
-            for (let i = 1; i <= 2; i++) {
-                const button = document.createElement('button');
-                button.textContent = `Choice ${i}`;
-                button.onclick = () => {
-                    resolve(i);
-                    buttons.forEach(btn => btn.remove());
-                };
-                comparison.appendChild(button);
-                buttons.push(button);
-            }
-        });
-
-        const selected = choice === 1 ? a : b;
-        comparison.innerHTML += `<p class="result">You chose: ${selected}</p>`;
-        return selected;
-    }
-
-    async function sortAndDisplay() {
-        const sortedList = await humanMergeSort(my_list, userCompare);
-        document.getElementById('sortedResult').textContent = `Sorted by your preferences: ${sortedList.join(', ')}`;
-    }
-
-    sortAndDisplay();
-</script>
-
+    <script src="script.js"></script>
 </body>
 </html>
