@@ -1,3 +1,3 @@
 # Seuguhfr.github.io
 
-I'm currently trying access to my namecheap account
+I'm currently trying to access to my namecheap account. 
